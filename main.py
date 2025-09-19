@@ -1,4 +1,5 @@
 import random
+import sys
 import uuid
 from datetime import datetime, timezone
 
@@ -15,7 +16,8 @@ engine = create_engine(
 )
 repos_per_user = 50
 enabled_repos_per_user = 10
-num_users = 500
+num_users = 200_000
+delete_only = False
 
 with Session(engine) as session:
     session.execute(delete(RemoteToken))
@@ -23,6 +25,10 @@ with Session(engine) as session:
     session.execute(delete(Release))
     session.execute(delete(Repository))
     session.execute(delete(User))
+
+    if delete_only:
+        session.commit()
+        sys.exit(0)
 
     user_ids = []
     for i in tqdm(range(num_users), desc="users"):
@@ -48,27 +54,29 @@ with Session(engine) as session:
         session.add(user)
         user_ids.append(i)
 
+    next_github_id = 1
     for user_id in tqdm(user_ids, desc="user_repos"):
         all_repos = []
         remoteaccount_repos = {}
         for _ in range(repos_per_user):
             id = uuid.uuid4()
-            github_id = random_with_N_digits(8)
             repo = Repository(
                 id=id,
-                github_id=github_id,
+                github_id=next_github_id,
                 name=f"{get_word()}/{get_word()}-{get_word()}-{random_chars(10)}",
                 user_id=user_id,
-                hook=random_with_N_digits(5),
+                hook=random_with_N_digits(6),
             )
             all_repos.append(repo)
 
-            remoteaccount_repos[github_id] = {
-                "id": github_id,
+            remoteaccount_repos[str(next_github_id)] = {
+                "id": next_github_id,
                 "full_name": repo.name,
                 "description": get_sentence(),
                 "default_branch": "main",
             }
+
+            next_github_id += 1
 
         remote_account = RemoteAccount(
             user_id=user_id,
