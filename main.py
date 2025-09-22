@@ -4,11 +4,11 @@ import uuid
 from datetime import datetime, timezone
 
 from lorem import get_sentence, get_word
-from sqlalchemy import create_engine, delete
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 from tqdm import tqdm
 
-from models import Release, RemoteAccount, RemoteToken, Repository, User
+from models import RemoteAccount, Repository, User
 from utils import random_chars, random_with_N_digits
 
 engine = create_engine(
@@ -16,15 +16,15 @@ engine = create_engine(
 )
 repos_per_user = 50
 enabled_repos_per_user = 10
-num_users = 200_000
+num_users = 5_000
 delete_only = False
 
 with Session(engine) as session:
-    session.execute(delete(RemoteToken))
-    session.execute(delete(RemoteAccount))
-    session.execute(delete(Release))
-    session.execute(delete(Repository))
-    session.execute(delete(User))
+    session.execute(text("TRUNCATE TABLE oauthclient_remotetoken CASCADE"))
+    session.execute(text("TRUNCATE TABLE oauthclient_remoteaccount CASCADE"))
+    session.execute(text("TRUNCATE TABLE github_releases CASCADE"))
+    session.execute(text("TRUNCATE TABLE github_repositories CASCADE"))
+    session.execute(text("TRUNCATE TABLE accounts_user CASCADE"))
 
     if delete_only:
         session.commit()
